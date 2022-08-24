@@ -3,7 +3,10 @@
 namespace Spatie\ElasticsearchQueryBuilder;
 
 use Elastic\Elasticsearch\Client;
+use Elastic\Elasticsearch\Response\Elasticsearch;
+use Http\Promise\Promise;
 use Spatie\ElasticsearchQueryBuilder\Aggregations\Aggregation;
+use Spatie\ElasticsearchQueryBuilder\Exceptions\UnexpectedResponseType;
 use Spatie\ElasticsearchQueryBuilder\Queries\BoolQuery;
 use Spatie\ElasticsearchQueryBuilder\Queries\Query;
 use Spatie\ElasticsearchQueryBuilder\Sorts\Sort;
@@ -65,6 +68,12 @@ class Builder
         return $this;
     }
 
+
+    /**
+     * @throws \Spatie\ElasticsearchQueryBuilder\Exceptions\UnexpectedResponseType
+     * @throws \Elastic\Elasticsearch\Exception\ClientResponseException
+     * @throws \Elastic\Elasticsearch\Exception\ServerResponseException
+     */
     public function search(): array
     {
         $payload = $this->getPayload();
@@ -85,7 +94,17 @@ class Builder
             $params['from'] = $this->from;
         }
 
-        return $this->client->search($params);
+        $response =  $this->client->search($params);
+
+        if($response instanceof Promise){
+            $response =  $response->wait();
+        }
+
+        if(!$response instanceof Elasticsearch){
+            throw new UnexpectedResponseType(get_class($response));
+        }
+
+        return $response->asArray();
     }
 
     public function index(string $searchIndex): static
