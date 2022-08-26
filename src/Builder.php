@@ -37,7 +37,7 @@ class Builder
 
     public function addQuery(Query $query, string $boolType = 'must'): static
     {
-        if (! $this->query) {
+        if (!$this->query) {
             $this->query = new BoolQuery();
         }
 
@@ -48,7 +48,7 @@ class Builder
 
     public function addAggregation(Aggregation $aggregation): static
     {
-        if (! $this->aggregations) {
+        if (!$this->aggregations) {
             $this->aggregations = new AggregationCollection();
         }
 
@@ -59,7 +59,7 @@ class Builder
 
     public function addSort(Sort $sort): static
     {
-        if (! $this->sorts) {
+        if (!$this->sorts) {
             $this->sorts = new SortCollection();
         }
 
@@ -94,17 +94,26 @@ class Builder
             $params['from'] = $this->from;
         }
 
-        $response =  $this->client->search($params);
+        $response = $this->client->search($params);
 
-        if($response instanceof Promise){
-            $response =  $response->wait();
+        return $this->processResponse($response)->asArray();
+    }
+
+    public function count(): array
+    {
+        $payload = $this->getPayload();
+
+        $params = [
+            'body' => $payload,
+        ];
+
+        if ($this->searchIndex) {
+            $params['index'] = $this->searchIndex;
         }
 
-        if(!$response instanceof Elasticsearch){
-            throw new UnexpectedResponseType(get_class($response));
-        }
+        $response = $this->client->count($params);
 
-        return $response->asArray();
+        return $this->processResponse($response)->asArray();
     }
 
     public function index(string $searchIndex): static
@@ -174,5 +183,22 @@ class Builder
         }
 
         return $payload;
+    }
+
+    /**
+     * @param \Elastic\Elasticsearch\Response\Elasticsearch|\Http\Promise\Promise $response
+     * @return \Elastic\Elasticsearch\Response\Elasticsearch
+     * @throws \Spatie\ElasticsearchQueryBuilder\Exceptions\UnexpectedResponseType
+     */
+    private function processResponse(Elasticsearch|Promise $response): Elasticsearch
+    {
+        if ($response instanceof Promise) {
+            $response = $response->wait();
+        }
+
+        if (!$response instanceof Elasticsearch) {
+            throw new UnexpectedResponseType(get_class($response));
+        }
+        return $response;
     }
 }
