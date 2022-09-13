@@ -9,7 +9,7 @@ use Spatie\ElasticsearchQueryBuilder\Aggregations\Aggregation;
 use Spatie\ElasticsearchQueryBuilder\Exceptions\UnexpectedResponseType;
 use Spatie\ElasticsearchQueryBuilder\Queries\BoolQuery;
 use Spatie\ElasticsearchQueryBuilder\Queries\Query;
-use Spatie\ElasticsearchQueryBuilder\Sorts\Sort;
+use Spatie\ElasticsearchQueryBuilder\Sorts\SortInterface;
 
 class Builder
 {
@@ -57,7 +57,7 @@ class Builder
         return $this;
     }
 
-    public function addSort(Sort $sort): static
+    public function addSort(SortInterface $sort): static
     {
         if (!$this->sorts) {
             $this->sorts = new SortCollection();
@@ -102,6 +102,11 @@ class Builder
     public function count(): array
     {
         $payload = $this->getPayload();
+
+        // Remove sort
+        if (isset($payload['sort'])) {
+            unset($payload['sort']);
+        }
 
         $params = [
             'body' => $payload,

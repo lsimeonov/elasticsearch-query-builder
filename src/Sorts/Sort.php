@@ -2,7 +2,7 @@
 
 namespace Spatie\ElasticsearchQueryBuilder\Sorts;
 
-class Sort
+class Sort implements SortInterface
 {
     public const ASC = 'asc';
     public const DESC = 'desc';
